@@ -1,0 +1,4 @@
+# 文件格式转化为utf-8
+enca -L zh_CN -x UTF-8 filename
+
+
