@@ -21,8 +21,77 @@ relation_type_dict = {
 }
 
 
+
+def start_label(dfp_use,save_path):
+    """
+    ## 2.2 进入标注状态
+    """
+    try:
+        data_id = max([int(i) for i in os.listdir(save_path) if i.isalnum()])
+    except:
+        data_id = -1
+    data_id += 1
+    number = st.number_input('点击+号进入下一文件的标注（第一次进行不需要点击+号,会默认寻找最大文件编号+1）',value=data_id,min_value=0,max_value=1000,step=1)
+    data_id = str(number).zfill(4)
+    f'**1. 当前标注文件id:{data_id}**'
+    save_path_i = osp.join(save_path,data_id)
+    if osp.exists(save_path_i):
+        need2data_id = max([int(i) for i in os.listdir(save_path) if i.isalnum()]) + 1
+        f'当前选择标注文件已经**存在**，不允许重复标注，请选择标注id:**{need2data_id}**'
+    else:
+        f'当前选择标注文件**不存在**，可以开始标注'
+        f'**2. 生成模拟实体数据dfp_node**'
+        dfp_node = generate_simulate_node(dfp_use)
+        dfp_node
+        f'**3. 生成无关系态势图**'
+        fig_without_relation = plt_graph_without_relation(dfp_node)
+        fig_without_relation
+        """
+        **4. 输入感知关系三元组**
+        (src_entity_id,relation_type,des_entity_id)
+        """
+        st.write(f'当前实体id从{0,dfp_node.shape[0]}')
+        st.write(relation_type_dict)
+        # edge_str = st.text_input('输入关系标注,如示例使用,隔开', value='001,012,023', key=i+10000)
+        edge_str = st.text_input('输入关系标注,如示例使用,隔开', value='001,012,023')
+        edge_list = [[int(l[0]),relation_type_dict[int(l[1])],int(l[2])] for l in edge_str.split(',')]
+        # edge_list
+        dfp_edge = pd.DataFrame(edge_list,columns=['src_entity_id','relation_type','des_entity_id'])
+        # dfp_edge
+        # 获取可视化坐标
+        dfp_edge_use = dfp_edge
+        need_cols = ['entity_id','DrawX','DrawY']
+        for s in ['src','des']:
+            dfp_edge_use = dfp_edge_use.merge(dfp_node[need_cols],left_on=f'{s}_entity_id',right_on='entity_id',how='left')\
+                .drop(columns=[need_cols[0]])\
+                .rename(columns=dict([(co,f'{s}_{co}') for co in need_cols[1:]]))
+        '**5. 生成模拟边数据dfp_edge**'
+        dfp_edge
+        '**6. 生成有关系态势图**'
+        fig_with_relation = plt_graph_with_relation(dfp_node,dfp_edge_use)
+        fig_with_relation
+
+        # save = st.checkbox('标注完成请点击保存',key=i)
+        save = st.button('标注完成请点击保存')
+        if save:
+            # 存储数据
+            os.mkdir(save_path_i)
+            dfp_node.to_csv(osp.join(save_path_i,f'node.csv'),index=False)
+            dfp_edge.to_csv(osp.join(save_path_i,f'edge.csv'),index=False)
+            fig_without_relation.savefig(osp.join(save_path_i,f'fig_without_relation.png'),
+                                        dpi=500,bbox_inches = 'tight')
+            fig_with_relation.savefig(osp.join(save_path_i,f'fig_with_relation.png'),
+                                        dpi=500,bbox_inches = 'tight')
+            '存储完毕,请回到2.2，选择开始下一个标注文件'
+    
+    return None
+
+
 def main():
     st.title("无人艇环境感知模拟环境数据标注_v0")
+    # number = st.number_input('Insert a number',value=0,min_value=0,max_value=1000,step=1)
+    # st.write('The current number is ', number)
+    # st.markdown("<font color=#0099ff size=7 face="黑体">color=#0099ff size=72 face="黑体"</font>")
     """
     # 1. 展示样例数据
     > 环境感知数据分别包含如下三块：
@@ -98,104 +167,12 @@ def main():
     f'**使用船舶数据库如下**'
     dfp_use[:5]
 
-    """
-    ## 2.2 进入标注状态
-    """
-    flag = 1
-    i = 0
-    while(flag):
-        flag = 0
-        try:
-            data_id = max([int(i) for i in os.listdir(save_path) if i.isalnum()])
-        except:
-            data_id = -1
-        data_id = str(data_id + 1).zfill(4)
-        f'**1. 当前标注文件id:{data_id}**'
-        f'**2. 生成模拟实体数据dfp_node**'
-        dfp_node = generate_simulate_node(dfp_use)
-        dfp_node
-        f'**3. 生成无关系态势图**'
-        fig_without_relation = plt_graph_without_relation(dfp_node)
-        fig_without_relation
-        """
-        **4. 输入感知关系三元组**
-        (src_entity_id,relation_type,des_entity_id)
-        """
-        st.write(f'当前实体id从{0,dfp_node.shape[0]}')
-        st.write(relation_type_dict)
-        edge_str = st.text_input('输入关系标注,如示例使用,隔开', value='001,012,023', key=i)
-        edge_list = [[int(l[0]),relation_type_dict[int(l[1])],int(l[2])] for l in edge_str.split(',')]
-        # edge_list
-        dfp_edge = pd.DataFrame(edge_list,columns=['src_entity_id','relation_type','des_entity_id'])
-        # dfp_edge
-        # 获取可视化坐标
-        dfp_edge_use = dfp_edge
-        need_cols = ['entity_id','DrawX','DrawY']
-        for s in ['src','des']:
-            dfp_edge_use = dfp_edge_use.merge(dfp_node[need_cols],left_on=f'{s}_entity_id',right_on='entity_id',how='left')\
-                .drop(columns=[need_cols[0]])\
-                .rename(columns=dict([(co,f'{s}_{co}') for co in need_cols[1:]]))
-        '**5. 生成模拟边数据dfp_edge**'
-        dfp_edge
-        '**6. 生成有关系态势图**'
-        fig_with_relation = plt_graph_with_relation(dfp_node,dfp_edge_use)
-        fig_with_relation
 
-        save = st.button('标注完成请点击保存',key=i)
-        i += 1
-        if save:
-            flag = 1
-            # 存储数据
-            save_path_i = osp.join(save_path,data_id)
-            os.mkdir(save_path_i)
-            dfp_node.to_csv(osp.join(save_path_i,f'node.csv'),index=False)
-            dfp_edge.to_csv(osp.join(save_path_i,f'edge.csv'),index=False)
-            fig_without_relation.savefig(osp.join(save_path_i,f'fig_without_relation.png'),
-                                        dpi=500,bbox_inches = 'tight')
-            fig_with_relation.savefig(osp.join(save_path_i,f'fig_with_relation.png'),
-                                        dpi=500,bbox_inches = 'tight')
-            '存储完毕'
+    start_label(dfp_use,save_path)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    return None
+    
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

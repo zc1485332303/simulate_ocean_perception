@@ -305,7 +305,7 @@ def plt_graph_without_relation(dfp_node):
     """
     生成不包含关系的态势图
     """
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS'] #用来正常显示中文标签
+    plt.rcParams['font.sans-serif'] = ['simhei'] #mac用来正常显示中文标签
     plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
 
     # 先画雷达导航区域
@@ -339,7 +339,7 @@ def plt_graph_with_relation(dfp_node,dfp_edge):
     """
     生成包含关系的态势图
     """
-    plt.rcParams['font.sans-serif'] = ['Arial Unicode MS'] #用来正常显示中文标签
+    plt.rcParams['font.sans-serif'] = ['simhei'] #用来正常显示中文标签
     plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
 
     # 先画雷达导航区域
