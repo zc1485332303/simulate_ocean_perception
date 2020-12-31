@@ -21,7 +21,7 @@ radar_radius = 400
 fontsize = 15
 
 # 画图会展示的列
-display_cols = ['ShipName','ShipType','NavStatus','Length','Width','Draught']
+display_cols = ['ShipName','ShipType','NavStatus','Length','Width','Draught','Speed']
 
 # 各种实体的结构
 config_dict = {
@@ -246,7 +246,6 @@ def generate_simulate_node(dfp_use):
             dfp_sample['Lon'] = dfp_middle.apply(lambda s:s[0])
             dfp_sample['Lat'] = dfp_middle.apply(lambda s:s[1])
 
-
         min_num,max_num = config_dict[entity_type][f'speed_range']    
         dfp_sample['Speed'] = np.random.rand(num)*(max_num-min_num) + min_num
         dfp_sample['Course'] = np.random.rand(num)*360
@@ -255,7 +254,7 @@ def generate_simulate_node(dfp_use):
     dfp_node = pd.concat(dfp_list,axis=0).reset_index(drop=True)
     dfp_node['entity_id'] = range(dfp_node.shape[0])
     dfp_node['display_text'] = dfp_node.apply(
-        lambda s:(f'船{s.entity_id}-' + '-'.join([str(s[co]) for co in display_cols])) if s.ShipName != -1 else f'{s.entity_type}{s.entity_id}',axis=1)
+        lambda s:(f'船{s.entity_id}-' + '-'.join([str(s[co] if not isinstance(s[co],float) or pd.isna(s[co]) else round(s[co])) for co in display_cols])) if s.ShipName != -1 else f'{s.entity_type}{s.entity_id}',axis=1)
     dfp_node = dfp_node[columns]
 
     
@@ -321,8 +320,10 @@ def plt_graph_without_relation(dfp_node):
         fmt = config_dict[row.entity_type]['draw_dict']['fmt']
         markersize = config_dict[row.entity_type]['draw_dict']['markersize']
         plt.plot(row.DrawX,row.DrawY,fmt,markersize=markersize,label=row.display_text)
-        plt.text(row.DrawX,row.DrawY,row.display_text.split('-')[0]+'_'+f'{round(row.Speed)}节' ,fontsize = fontsize,alpha=0.8)  
-        des_xy = (row.DrawX+np.sin(row.Course)*radar_radius/8,row.DrawY+np.cos(row.Course)*radar_radius/8)
+        plt.text(row.DrawX,row.DrawY,row.display_text.split('-')[0],fontsize = fontsize,alpha=0.8)  
+        # 这里箭头的长度应该与速度有关范围从（radar_radius/10，radar_radius/5）,0~100
+        speed_current_long = radar_radius/15 + radar_radius/5 * row.Speed / 100  
+        des_xy = (row.DrawX+np.sin(row.Course)*speed_current_long,row.DrawY+np.cos(row.Course)*speed_current_long)
         plt.annotate('',
                      xy=des_xy,
                      xytext=(row.DrawX,row.DrawY),
@@ -355,8 +356,9 @@ def plt_graph_with_relation(dfp_node,dfp_edge):
         fmt = config_dict[row.entity_type]['draw_dict']['fmt']
         markersize = config_dict[row.entity_type]['draw_dict']['markersize']
         plt.plot(row.DrawX,row.DrawY,fmt,markersize=markersize,label=row.display_text)
-        plt.text(row.DrawX,row.DrawY,row.display_text.split('-')[0]+'_'+f'{round(row.Speed)}节' ,fontsize = fontsize,alpha=0.8)  
-        des_xy = (row.DrawX+np.sin(row.Course)*radar_radius/8,row.DrawY+np.cos(row.Course)*radar_radius/8)
+        plt.text(row.DrawX,row.DrawY,row.display_text.split('-')[0],fontsize = fontsize,alpha=0.8)  
+        speed_current_long = radar_radius/15 + radar_radius/5 * row.Speed / 100  
+        des_xy = (row.DrawX+np.sin(row.Course)*speed_current_long,row.DrawY+np.cos(row.Course)*speed_current_long)
         plt.annotate('',
                      xy=des_xy,
                      xytext=(row.DrawX,row.DrawY),
